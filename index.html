@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLEU — Generador de Rúbrica | HCLA 50.05</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
+
+  :root {
+    --azul-o: #1B3A6B;
+    --azul-m: #2E5FA3;
+    --azul-c: #D9E4F5;
+    --azul-mc: #EEF4FB;
+    --verde: #1E6B3C;
+    --verde-f: #E6F4EC;
+    --rojo: #7A1515;
+    --rojo-f: #FAE8E8;
+    --ambar: #7A5C00;
+    --ambar-f: #FFFBE6;
+    --naran: #7A3200;
+    --naran-f: #FFF3E0;
+    --gris-c: #F4F6FA;
+    --gris-o: #555566;
+    --texto: #1A1A2E;
+    --blanco: #FFFFFF;
+    --morado: #4A235A;
+    --morado-f: #F5EEF8;
+    --borde: #D1DCF0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #F0F4FA;
+    color: var(--texto);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--azul-o);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid var(--azul-m);
+  }
+  .header-titulo { color: var(--blanco); font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+  .header-sub { color: #BBCCEE; font-size: 12px; margin-top: 2px; }
+  .badge {
+    background: var(--azul-m);
+    color: var(--blanco);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  /* ── LAYOUT ── */
+  .layout {
+    display: flex;
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 28px 20px;
+    gap: 22px;
+    align-items: flex-start;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 210px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .card {
+    background: var(--blanco);
+    border-radius: 12px;
+    border: 1px solid var(--borde);
+    overflow: hidden;
+  }
+  .card-pad { padding: 18px; }
+
+  /* ── PASOS SIDEBAR ── */
+  .paso-label { font-size: 11px; font-weight: 700; color: var(--gris-o); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 10px; padding: 14px 14px 0; }
+  .paso-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-left: 3px solid transparent;
+  }
+  .paso-item:hover { background: var(--gris-c); }
+  .paso-item.activo { background: var(--azul-mc); border-left-color: var(--azul-m); }
+  .paso-item.completo { border-left-color: var(--verde); }
+  .paso-num {
+    width: 24px; height: 24px; border-radius: 12px;
+    background: #CBD5E1; color: var(--blanco);
+    font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: background 0.2s;
+  }
+  .paso-item.activo .paso-num { background: var(--azul-m); }
+  .paso-item.completo .paso-num { background: var(--verde); }
+  .paso-titulo { font-size: 13px; color: var(--gris-o); font-weight: 500; }
+  .paso-item.activo .paso-titulo { color: var(--azul-o); font-weight: 700; }
+
+  .nota-sidebar { background: var(--azul-mc); border-radius: 10px; padding: 14px; border: 1px solid var(--azul-c); font-size: 12px; color: var(--gris-o); line-height: 1.5; }
+  .nota-sidebar strong { color: var(--azul-o); }
+
+  /* ── MAIN ── */
+  .main { flex: 1; min-width: 0; }
+
+  /* ── PANEL ── */
+  .panel { background: var(--blanco); border-radius: 12px; border: 1px solid var(--borde); padding: 28px; }
+  .panel-titulo { font-size: 18px; font-weight: 700; color: var(--azul-o); }
+  .panel-sub { font-size: 13px; color: var(--gris-o); margin-top: 4px; }
+  .panel-header { border-bottom: 3px solid var(--azul-m); padding-bottom: 14px; margin-bottom: 24px; }
+
+  /* ── CAMPOS ── */
+  .campo { margin-bottom: 18px; }
+  .campo label { display: block; font-weight: 600; font-size: 14px; color: var(--azul-o); margin-bottom: 4px; }
+  .campo .hint { font-size: 12px; color: var(--gris-o); font-style: italic; margin-bottom: 6px; }
+  .campo input, .campo textarea {
+    width: 100%; padding: 9px 12px;
+    border: 1.5px solid var(--borde); border-radius: 8px;
+    font-size: 14px; color: var(--texto);
+    font-family: 'Inter', sans-serif;
+    background: var(--blanco);
+    transition: border-color 0.15s;
+    resize: vertical;
+  }
+  .campo input:focus, .campo textarea:focus {
+    outline: none; border-color: var(--azul-m);
+    box-shadow: 0 0 0 3px rgba(46,95,163,0.08);
+  }
+
+  /* ── BLOOM SELECTOR ── */
+  .bloom-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 6px; }
+  .bloom-item {
+    padding: 10px 8px; border-radius: 8px;
+    border: 2px solid var(--borde); background: var(--blanco);
+    cursor: pointer; text-align: center;
+    transition: all 0.15s;
+  }
+  .bloom-item:hover { border-color: var(--azul-c); background: var(--azul-mc); }
+  .bloom-item.sel { border-color: var(--azul-m); background: var(--azul-c); }
+  .bloom-item .bn { font-weight: 700; font-size: 13px; color: var(--azul-o); text-transform: capitalize; }
+  .bloom-item .bv { font-size: 11px; color: var(--gris-o); margin-top: 2px; }
+
+  /* ── TOGGLE ── */
+  .toggle-row { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 18px; }
+  .toggle-switch {
+    width: 44px; height: 24px; border-radius: 12px;
+    background: #CBD5E1; cursor: pointer;
+    position: relative; flex-shrink: 0; margin-top: 2px;
+    transition: background 0.2s; border: none; padding: 0;
+  }
+  .toggle-switch.on { background: var(--azul-m); }
+  .toggle-knob {
+    width: 18px; height: 18px; border-radius: 9px; background: var(--blanco);
+    position: absolute; top: 3px; left: 3px;
+    transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .toggle-switch.on .toggle-knob { left: 23px; }
+  .toggle-label { font-weight: 600; font-size: 14px; color: var(--azul-o); }
+  .toggle-hint { font-size: 12px; color: var(--gris-o); font-style: italic; margin-top: 2px; }
+  .toggle-sub { margin-left: 56px; margin-top: -10px; margin-bottom: 14px; }
+
+  /* ── BOTONES ── */
+  .btn {
+    padding: 10px 26px; border-radius: 8px; font-size: 14px;
+    font-weight: 700; cursor: pointer; border: none;
+    font-family: 'Inter', sans-serif; transition: all 0.15s;
+  }
+  .btn-primary { background: var(--azul-m); color: var(--blanco); }
+  .btn-primary:hover { background: var(--azul-o); }
+  .btn-primary:disabled { background: #CBD5E1; cursor: not-allowed; }
+  .btn-success { background: var(--verde); color: var(--blanco); }
+  .btn-success:hover { background: #145228; }
+  .btn-ghost { background: var(--gris-c); color: var(--gris-o); border: 1px solid #CBD5E1; }
+  .btn-ghost:hover { background: #E2E8F0; }
+  .btn-ambar { background: var(--ambar-f); color: var(--ambar); border: 1px solid var(--ambar); }
+  .btn-row { display: flex; justify-content: space-between; margin-top: 24px; }
+  .btn-row-end { display: flex; justify-content: flex-end; margin-top: 24px; }
+
+  /* ── ALERTA ── */
+  .alerta { border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; font-size: 13px; line-height: 1.5; }
+  .alerta-azul { background: var(--azul-mc); border: 1px solid var(--azul-c); border-left: 4px solid var(--azul-m); color: var(--azul-o); }
+  .alerta-ambar { background: var(--ambar-f); border: 1px solid #D4A017; border-left: 4px solid var(--ambar); color: var(--ambar); }
+  .alerta-rojo { background: var(--rojo-f); border: 1px solid #D46060; border-left: 4px solid var(--rojo); color: var(--rojo); }
+  .alerta-verde { background: var(--verde-f); border: 1px solid #5FAD7C; border-left: 4px solid var(--verde); color: var(--verde); }
+
+  /* ── TABLA RUBRICA ── */
+  .rubrica-wrapper { overflow-x: auto; border-radius: 8px; border: 1px solid var(--borde); }
+  .rubrica-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 700px; }
+  .rubrica-table thead tr { background: var(--azul-o); }
+  .rubrica-table th { color: var(--blanco); padding: 10px 12px; text-align: left; font-weight: 700; font-size: 12px; }
+  .rubrica-table th:not(:first-child) { text-align: center; }
+  .rubrica-table td { padding: 10px 12px; vertical-align: top; border-bottom: 1px solid var(--azul-c); font-size: 11.5px; line-height: 1.45; }
+  .td-nombre { background: var(--azul-mc); font-weight: 700; color: var(--azul-o); width: 20%; }
+  .td-pts { font-weight: 700; color: var(--azul-m); font-size: 11px; margin-top: 3px; }
+  .td-exc { background: var(--verde-f); color: var(--verde); }
+  .td-sat { background: var(--ambar-f); color: var(--ambar); }
+  .td-ins { background: var(--naran-f); color: var(--naran); }
+  .td-def { background: var(--rojo-f); color: var(--rojo); }
+  .nivel-pts { font-weight: 700; margin-top: 5px; font-size: 11px; }
+  .rubrica-table tfoot td { background: var(--azul-c); font-weight: 700; color: var(--azul-o); padding: 10px 12px; }
+  .total-pts { color: var(--verde); font-size: 15px; font-weight: 700; text-align: right; }
+
+  /* ── PREVIEW ── */
+  .preview-list { list-style: none; padding: 0; }
+  .preview-list li { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--gris-c); font-size: 13px; color: var(--gris-o); }
+  .preview-list li::before { content: "▸"; color: var(--azul-m); font-weight: 700; }
+
+  /* ── EDITOR ── */
+  .editor-crit { border: 1px solid var(--azul-c); border-radius: 10px; padding: 16px; margin-bottom: 14px; background: var(--azul-mc); }
+  .editor-top { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 10px; }
+  .editor-nombre { flex: 1; }
+  .editor-pts { width: 80px; flex-shrink: 0; }
+  .nivel-editor label { font-size: 11px; font-weight: 700; display: block; margin-bottom: 3px; margin-top: 6px; }
+  .nivel-editor textarea { width: 100%; padding: 6px 8px; font-size: 12px; border-radius: 6px; font-family: 'Inter', sans-serif; border: 1.5px solid var(--borde); resize: vertical; }
+
+  /* ── CHECKLIST ── */
+  .check-item { display: flex; gap: 10px; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid var(--gris-c); }
+  .check-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+  .check-txt { font-size: 13px; }
+
+  /* ── BOTONES RESULTADO ── */
+  .result-actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+
+  /* ── TABLA EDITABLE INPUT ── */
+  .editor-crit input, .editor-crit textarea {
+    width: 100%; padding: 6px 10px;
+    border: 1.5px solid var(--borde); border-radius: 6px;
+    font-size: 13px; font-family: 'Inter', sans-serif; color: var(--texto);
+  }
+  .editor-crit input:focus, .editor-crit textarea:focus { outline: none; border-color: var(--azul-m); }
+
+  .suma-aviso { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 700; margin-left: 10px; }
+  .suma-ok { background: var(--verde-f); color: var(--verde); }
+  .suma-mal { background: var(--rojo-f); color: var(--rojo); }
+
+  .riesgo-item:hover { border-color: var(--azul-m) !important; }
+
+  @media (max-width: 768px) {
+    .layout { flex-direction: column; }
+    .sidebar { width: 100%; }
+    .bloom-grid { grid-template-columns: repeat(2, 1fr); }
+    #nivel-riesgo-grid { grid-template-columns: 1fr !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <div class="header-titulo">CLEU — Generador de Rúbrica de Evaluación</div>
+    <div class="header-sub">Plan de Práctica de Laboratorio  |  Formato HCLA 50.05  |  Revisión 7  |  2025</div>
+  </div>
+  <span class="badge">Dirección Académica Escolar</span>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="card">
+      <div class="paso-label">Pasos</div>
+      <div class="paso-item activo" id="nav-1" onclick="irA(1)">
+        <div class="paso-num">1</div>
+        <div class="paso-titulo">Identificación</div>
+      </div>
+      <div class="paso-item" id="nav-2" onclick="irA(2)">
+        <div class="paso-num">2</div>
+        <div class="paso-titulo">Productos</div>
+      </div>
+      <div class="paso-item" id="nav-3" onclick="irA(3)">
+        <div class="paso-num">3</div>
+        <div class="paso-titulo">Condiciones</div>
+      </div>
+      <div class="paso-item" id="nav-4" onclick="irA(4)" style="margin-bottom:10px">
+        <div class="paso-num">4</div>
+        <div class="paso-titulo">Rúbrica</div>
+      </div>
+    </div>
+    <div class="nota-sidebar">
+      <strong>💡 Recuerde</strong><br><br>
+      La rúbrica debe ser <strong>específica</strong> de su práctica.<br><br>
+      Si alguien que no conoce su asignatura lee la rúbrica y no puede identificar de qué práctica se trata, los criterios son <strong>genéricos</strong>.<br><br>
+      <strong>Rangos CLEU:</strong><br>
+      <strong>Fijos siempre:</strong><br>
+      Justificación: 1.0 pt<br>
+      Desarrollo y Obs.: 1.0 pt<br>
+      Bibliografía: 0.5 pt<br><br>
+      <strong>Según riesgo (Alto/Medio/Mínimo):</strong><br>
+      EPP: 3.0 / 2.0 / 1.0 pts<br>
+      Resultados: 2.5 / 3.0 / 3.5 pts<br>
+      Conclusiones: 2.0 / 2.5 / 3.0 pts<br><br>
+      La suma siempre es exactamente <strong>10.0</strong>.
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main" id="main-content">
+
+    <!-- PASO 1 -->
+    <div id="paso-1" class="panel">
+      <div class="panel-header">
+        <div class="panel-titulo">Paso 1 — Identificación de la práctica</div>
+        <div class="panel-sub">Ingrese los datos básicos. Esta información aparecerá en el encabezado de la rúbrica.</div>
+      </div>
+      <div class="campo">
+        <label>Nombre de la asignatura</label>
+        <div class="hint">Ejemplo: Fotografía y Video Forense (LCC0106) — tal como aparece en el plan de estudios.</div>
+        <input type="text" id="f-asignatura" placeholder="Ej. El Organismo Humano (LCC0105)" oninput="guardar()">
+      </div>
+      <div class="campo">
+        <label>Nombre de la práctica</label>
+        <div class="hint">Título breve y descriptivo. Indique QUÉ se hace y CON QUÉ propósito técnico. No más de 12 palabras.</div>
+        <input type="text" id="f-practica" placeholder="Ej. Velocidad de obturación: control del movimiento y la iluminación" oninput="guardar()">
+      </div>
+      <div class="campo" style="max-width:120px">
+        <label>Número de práctica</label>
+        <input type="number" id="f-num" value="1" min="1" max="20" oninput="guardar()">
+      </div>
+      <div class="campo">
+        <label>Nivel taxonómico principal (Bloom)</label>
+        <div class="hint">¿Qué se le pide principalmente al estudiante en esta práctica? Haga clic en el nivel que mejor corresponde.</div>
+        <div class="bloom-grid" id="bloom-grid"></div>
+      </div>
+      <div class="btn-row-end">
+        <button class="btn btn-primary" id="btn-paso1" onclick="irA(2)" disabled>Siguiente →</button>
+      </div>
+    </div>
+
+    <!-- PASO 2 -->
+    <div id="paso-2" class="panel" style="display:none">
+      <div class="panel-header">
+        <div class="panel-titulo">Paso 2 — Productos evaluables</div>
+        <div class="panel-sub">Describa qué hace y qué entrega el estudiante. Solo llene los campos que aplican a su práctica.</div>
+      </div>
+
+      <div class="alerta alerta-azul">
+        <strong>Clave para responder bien:</strong> piense en evidencias concretas, no en el procedimiento.<br>
+        ❌ <em>No escriba:</em> "realiza la práctica correctamente"<br>
+        ✅ <em>Escriba QUÉ produce:</em> "5 fotografías con velocidades distintas", "tabla de análisis con 5 filas", "frotis teñido con azul de metileno"
+      </div>
+      <div class="campo">
+        <label>① Procedimiento técnico central <span style="color:var(--rojo)">*obligatorio</span></label>
+        <div class="hint">¿Qué técnica específica ejecuta el estudiante? Use sustantivos concretos con número si aplica.<br>Ej: "configuración manual de la velocidad de obturación en 5 variaciones" | "disección del corazón y los pulmones" | "punción capilar y preparación de frotis sanguíneo"</div>
+        <input type="text" id="f-procedimiento" placeholder="Ej: configuración manual de la velocidad de obturación en 5 variaciones" oninput="guardar()">
+      </div>
+      <div class="campo">
+        <label>② Análisis o evidencia esperada en Resultados <span style="color:var(--gris-o);font-weight:400">(opcional)</span></label>
+        <div class="hint">¿Qué debe comparar, identificar o demostrar el estudiante en el apartado de Resultados de su Reporte?<br>Ej: "comparación del efecto de congelado vs. movimiento por velocidad" | "diferenciación de los tipos celulares observados"</div>
+        <input type="text" id="f-analisis" placeholder="Ej: comparación del efecto de congelado vs. movimiento según la velocidad de obturación" oninput="guardar()">
+      </div>
+      <div class="campo">
+        <label>③ ¿Qué debía lograr el alumno en esta práctica? <span style="color:var(--gris-o);font-weight:400">(opcional, recomendado)</span></label>
+        <div class="hint">Resuma en una línea el objetivo central de esta práctica (lo que el alumno debía aprender o lograr). Este texto se usará para que la rúbrica de Resultados y Conclusiones verifique si el alumno realmente lo logró, en vez de evaluar de forma genérica.<br>Ej: "dominar el control técnico del movimiento mediante la configuración manual de la velocidad de obturación en 5 variaciones"</div>
+        <input type="text" id="f-proposito" placeholder="Ej: dominar el control técnico del movimiento mediante la configuración manual de la velocidad de obturación en 5 variaciones" oninput="guardar()">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="irA(1)">← Atrás</button>
+        <button class="btn btn-primary" id="btn-paso2" onclick="irA(3)" disabled>Siguiente →</button>
+      </div>
+    </div>
+
+    <!-- PASO 3 -->
+    <div id="paso-3" class="panel" style="display:none">
+      <div class="panel-header">
+        <div class="panel-titulo">Paso 3 — Condiciones de la práctica</div>
+        <div class="panel-sub">Estas condiciones ajustan automáticamente el peso de los criterios de seguridad.</div>
+      </div>
+
+      <div class="campo">
+        <label>Nivel de riesgo de la práctica</label>
+        <div class="hint">Determina el peso del criterio de seguridad en la rúbrica. Seleccione según el tipo de materiales que se usan en esta práctica.</div>
+        <div id="nivel-riesgo-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px">
+          <div class="riesgo-item sel" id="riesgo-minimo" onclick="selRiesgo('minimo')" style="padding:14px 10px;border-radius:10px;border:2px solid var(--azul-c);background:var(--azul-c);cursor:pointer;text-align:center;transition:all 0.15s">
+            <div style="font-size:22px;margin-bottom:4px">📷</div>
+            <div style="font-weight:700;color:var(--azul-o);font-size:13px">Mínimo</div>
+            <div style="color:var(--gris-o);font-size:11px;margin-top:3px">Fotografía, cómputo,<br>maniquíes, modelos anatómicos</div>
+            <div style="margin-top:8px;background:var(--azul-o);color:white;border-radius:6px;padding:3px 0;font-weight:700;font-size:12px">EPP: 1.0 pt</div>
+          </div>
+          <div class="riesgo-item" id="riesgo-estandar" onclick="selRiesgo('estandar')" style="padding:14px 10px;border-radius:10px;border:2px solid var(--borde);background:var(--blanco);cursor:pointer;text-align:center;transition:all 0.15s">
+            <div style="font-size:22px;margin-bottom:4px">🦴</div>
+            <div style="font-weight:700;color:var(--azul-o);font-size:13px">Medio</div>
+            <div style="color:var(--gris-o);font-size:11px;margin-top:3px">Material óseo, tejidos<br>preservados, muestras secas</div>
+            <div style="margin-top:8px;background:var(--ambar);color:white;border-radius:6px;padding:3px 0;font-weight:700;font-size:12px">EPP: 2.0 pts</div>
+          </div>
+          <div class="riesgo-item" id="riesgo-alto" onclick="selRiesgo('alto')" style="padding:14px 10px;border-radius:10px;border:2px solid var(--borde);background:var(--blanco);cursor:pointer;text-align:center;transition:all 0.15s">
+            <div style="font-size:22px;margin-bottom:4px">⚗️</div>
+            <div style="font-weight:700;color:var(--azul-o);font-size:13px">Alto</div>
+            <div style="color:var(--gris-o);font-size:11px;margin-top:3px">Reactivos químicos, fluidos<br>corporales, descomposición</div>
+            <div style="margin-top:8px;background:var(--rojo);color:white;border-radius:6px;padding:3px 0;font-weight:700;font-size:12px">EPP: 3.0 pts</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PREVIEW -->
+      <div class="alerta alerta-ambar" style="margin-top:8px">
+        <strong>Vista previa de criterios que se generarán:</strong>
+        <ul class="preview-list" id="preview-criterios" style="margin-top:8px"></ul>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="irA(2)">← Atrás</button>
+        <button class="btn btn-success" onclick="generarRubrica()">✓ Generar Rúbrica</button>
+      </div>
+    </div>
+
+    <!-- PASO 4 -->
+    <div id="paso-4" style="display:none">
+
+      <!-- Header resultado -->
+      <div class="panel" style="margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+          <div>
+            <div class="panel-titulo">Rúbrica generada</div>
+            <div class="panel-sub" id="rubrica-subtitulo"></div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <span id="badge-total" class="badge"></span>
+            <span id="badge-criterios" class="badge" style="background:var(--azul-c);color:var(--azul-o)"></span>
+          </div>
+        </div>
+        <div class="result-actions">
+          <button class="btn btn-ambar" id="btn-editar" onclick="toggleEdicion()">✏️ Editar criterios</button>
+          <button class="btn btn-ghost" onclick="reiniciar()">↺ Nueva rúbrica</button>
+          <button class="btn btn-primary" onclick="window.print()">🖨 Imprimir / Guardar PDF</button>
+        </div>
+      </div>
+
+      <!-- RECUADRO DE DISTRIBUCIÓN ESTRATÉGICA -->
+      <div id="div-distribucion" class="panel" style="margin-bottom:16px;border-color:var(--azul-m)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+          <div>
+            <div style="font-weight:700;color:var(--azul-o);font-size:15px">📊 Distribución estratégica de puntos</div>
+            <div style="font-size:12px;color:var(--gris-o);margin-top:2px">Verifique que el peso de cada criterio refleje su importancia técnica real en esta práctica</div>
+          </div>
+          <div id="formula-display" style="font-size:12px;color:var(--azul-o);background:var(--azul-mc);padding:6px 14px;border-radius:8px;border:1px solid var(--azul-c);font-weight:600"></div>
+        </div>
+        <div id="barras-distribucion" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div style="margin-top:14px;padding:10px 14px;background:var(--ambar-f);border-radius:8px;border-left:4px solid var(--ambar);font-size:12px;color:var(--ambar)">
+          <strong>Regla de oro:</strong> Si alguien que no conoce su asignatura lee esta rúbrica y no puede identificar de qué práctica se trata, los criterios son genéricos y deben reescribirse. Una rúbrica bien construida es única para cada práctica.
+        </div>
+      </div>
+
+      <!-- MODO EDICIÓN -->
+      <div id="div-editor" class="panel" style="display:none;margin-bottom:16px;border-color:var(--ambar)">
+        <div style="font-weight:700;color:var(--ambar);font-size:15px;margin-bottom:6px">✏️ Editar criterios</div>
+        <div style="font-size:13px;color:var(--gris-o);margin-bottom:16px">Adapte los textos a su práctica. Suma de puntos: <span id="suma-display"></span></div>
+        <div id="editor-criterios"></div>
+      </div>
+
+      <!-- TABLA RÚBRICA -->
+      <div id="div-tabla" class="panel" style="margin-bottom:16px">
+        <div style="font-weight:700;color:var(--azul-o);font-size:15px;margin-bottom:14px" id="tabla-titulo"></div>
+        <div class="rubrica-wrapper">
+          <table class="rubrica-table" id="tabla-rubrica">
+            <thead>
+              <tr>
+                <th>Criterio de Evaluación</th>
+                <th style="background:var(--verde);color:white">Excelente</th>
+                <th style="background:var(--ambar);color:white">Satisfactorio</th>
+                <th style="background:var(--naran);color:white">Insuficiente</th>
+                <th style="background:var(--rojo);color:white">Deficiente / No presentado</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-body"></tbody>
+            <tfoot>
+              <tr>
+                <td colspan="1" style="font-weight:700;color:var(--azul-o)">Calificación final de la práctica (sobre 10):</td>
+                <td colspan="4" class="total-pts" id="total-display"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div class="alerta alerta-azul" style="margin-top:16px;font-size:12px">
+          <strong>Instrucción de uso:</strong> Copie esta rúbrica y péguela en la Sección IX del formato HCLA 50.05.
+          Para copiar: seleccione toda la tabla con el ratón, Ctrl+C, y luego Ctrl+V en Word.
+          También puede imprimir esta página con el botón <strong>🖨 Imprimir / Guardar PDF</strong>.
+        </div>
+      </div>
+
+      <!-- CHECKLIST -->
+      <div class="panel">
+        <div style="font-weight:700;color:var(--azul-o);font-size:14px;margin-bottom:14px">📌 Antes de pegar la rúbrica en el formato, verifique:</div>
+        <div id="checklist"></div>
+      </div>
+
+    </div>
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<script>
+// ─── ESTADO ────────────────────────────────────────────────────────────────
+const estado = {
+  asignatura: "", practica: "", num: "1", bloom: "aplicar",
+  procedimiento: "", analisis: "", registro: "", informe: "",
+  nivelRiesgo: "minimo", preguntas: false, npreguntas: 3,
+};
+let criteriosActuales = [];
+let pasoActual = 1;
+
+const BLOOM = {
+  recordar:   ["Identifica","Enumera","Define","Lista"],
+  comprender: ["Explica","Describe","Clasifica","Resume"],
+  aplicar:    ["Aplica","Ejecuta","Configura","Realiza"],
+  analizar:   ["Analiza","Compara","Contrasta","Diferencia"],
+  evaluar:    ["Evalúa","Argumenta","Justifica","Valora"],
+  crear:      ["Diseña","Elabora","Construye","Propone"],
+};
+
+// ─── INIT ──────────────────────────────────────────────────────────────────
+(function init(){
+  const grid = document.getElementById("bloom-grid");
+  Object.entries(BLOOM).forEach(([nivel, verbos]) => {
+    const d = document.createElement("div");
+    d.className = "bloom-item" + (nivel === "aplicar" ? " sel" : "");
+    d.onclick = () => selBloom(nivel);
+    d.id = "bloom-" + nivel;
+    d.innerHTML = `<div class="bn">${nivel}</div><div class="bv">${verbos.slice(0,2).join(", ")}...</div>`;
+    grid.appendChild(d);
+  });
+  validarPasos();
+})();
+
+// ─── GUARDAR / VALIDAR ─────────────────────────────────────────────────────
+function guardar() {
+  estado.asignatura    = v("f-asignatura");
+  estado.practica      = v("f-practica");
+  estado.num           = v("f-num") || "1";
+  estado.procedimiento = v("f-procedimiento");
+  estado.analisis      = v("f-analisis");
+  estado.proposito     = v("f-proposito");
+  validarPasos();
+  actualizarPreview();
+}
+
+function v(id) { const el = document.getElementById(id); return el ? el.value.trim() : ""; }
+
+function validarPasos() {
+  const ok1 = estado.asignatura && estado.practica;
+  const ok2 = estado.procedimiento;
+  document.getElementById("btn-paso1").disabled = !ok1;
+  document.getElementById("btn-paso2").disabled = !ok2;
+}
+
+function selBloom(nivel) {
+  estado.bloom = nivel;
+  document.querySelectorAll(".bloom-item").forEach(el => el.classList.remove("sel"));
+  document.getElementById("bloom-" + nivel).classList.add("sel");
+}
+
+// ─── NAVEGACIÓN ────────────────────────────────────────────────────────────
+function irA(n) {
+  if (n === 2 && !estado.asignatura) return;
+  if (n === 3 && !estado.procedimiento) return;
+  pasoActual = n;
+  [1,2,3,4].forEach(i => {
+    document.getElementById("paso-"+i) && (document.getElementById("paso-"+i).style.display = i === n ? "block" : "none");
+    if (i === 4) document.getElementById("paso-4").style.display = n === 4 ? "block" : "none";
+  });
+  // nav
+  [1,2,3,4].forEach(i => {
+    const nav = document.getElementById("nav-"+i);
+    nav.classList.remove("activo","completo");
+    if (i === n) nav.classList.add("activo");
+    else if (i < n) nav.classList.add("completo");
+    nav.querySelector(".paso-num").textContent = (i < n) ? "✓" : i;
+  });
+  actualizarPreview();
+}
+
+// ─── TOGGLE ────────────────────────────────────────────────────────────────
+function selRiesgo(nivel) {
+  estado.nivelRiesgo = nivel;
+  document.querySelectorAll('.riesgo-item').forEach(el => {
+    el.style.border = '2px solid var(--borde)';
+    el.style.background = 'var(--blanco)';
+  });
+  const sel = document.getElementById('riesgo-' + nivel);
+  if (sel) {
+    sel.style.border = '2px solid var(--azul-m)';
+    sel.style.background = 'var(--azul-c)';
+  }
+  actualizarPreview();
+}
+
+function toggleCampo(campo) {
+  estado[campo] = !estado[campo];
+  const btn = document.getElementById("tog-" + campo);
+  if (btn) btn.classList.toggle("on", estado[campo]);
+  actualizarPreview();
+}
+
+// ─── PREVIEW PASO 3 ────────────────────────────────────────────────────────
+function actualizarPreview() {
+  const ul = document.getElementById("preview-criterios");
+  if (!ul) return;
+  const TABLA = {
+    alto:     { epp: 3.0, resultados: 2.5, conclusiones: 2.0 },
+    estandar: { epp: 2.0, resultados: 3.0, conclusiones: 2.5 },
+    minimo:   { epp: 1.0, resultados: 3.5, conclusiones: 3.0 },
+  };
+  const rg = TABLA[estado.nivelRiesgo] || TABLA.minimo;
+  const nivelLabel = estado.nivelRiesgo === 'alto' ? 'Alto riesgo' : estado.nivelRiesgo === 'estandar' ? 'Riesgo Medio' : 'Riesgo mínimo';
+  const items = [
+    "<strong>REPORTE DE PRÁCTICA (HCLA 50.05-R)</strong>",
+    "① Justificación — 1.0 pt",
+    "② Desarrollo y Observaciones — 1.0 pt",
+    `③ Resultados — ${rg.resultados.toFixed(1)} pts`,
+    `④ Conclusiones (ligadas al Propósito) — ${rg.conclusiones.toFixed(1)} pts`,
+    "⑤ Bibliografía — 0.5 pt",
+    "<strong>PLAN DE PRÁCTICA (HCLA 50.05-S)</strong>",
+    `⑥ EPP y seguridad — ${rg.epp.toFixed(1)} pts (${nivelLabel})`,
+  ];
+  ul.innerHTML = items.map(i => `<li>${i}</li>`).join("");
+}
+
+// ─── GENERAR ───────────────────────────────────────────────────────────────
+function generarRubrica() {
+  guardar();
+  criteriosActuales = construirCriterios();
+  irA(4);
+  renderizarResultado();
+}
+
+function construirCriterios() {
+  const d = estado;
+  const c = [];
+  const bl = d.bloom || 'aplicar';
+
+  // ─── DESCRIPTORES POR NIVEL DE BLOOM (6 niveles oficiales) ────────────
+  const DESC_JUSTIFICACION = {
+    recordar:   (p) => `Identifica y enlista correctamente contextualización, problemática y valor formativo de ${p}, con los datos básicos correctos de la práctica.`,
+    comprender: (p) => `Explica con sus propias palabras la contextualización, problemática y valor formativo de ${p}, demostrando comprensión propia, no solo enumeración.`,
+    aplicar:    (p) => `Desarrolla los tres elementos (contextualización, problemática, valor formativo) de ${p} con ejemplos concretos de dónde se usa esta habilidad en el campo profesional.`,
+    analizar:   (p) => `Desarrolla los tres elementos de ${p} Y compara esta práctica con otras situaciones del campo profesional, identificando por qué esta habilidad resulta crítica.`,
+    crear:      (p) => `Integra los tres elementos de ${p} en un argumento único y coherente que conecta la práctica con el perfil de egreso completo, no solo con un dato aislado.`,
+    evaluar:    (p) => `Desarrolla los tres elementos de ${p} Y argumenta con criterio propio por qué esta práctica debería tener mayor o menor peso en su formación, sustentando su postura.`,
+  };
+
+  const DESC_DESARROLLO = {
+    recordar:   () => `Registra correctamente lo que ocurrió durante la sesión, siguiendo la guía específica del docente (Opción A) o describiendo con precisión los hechos básicos (Opción B).`,
+    comprender: () => `Explica con sus propias palabras lo que ocurrió y lo que no ocurrió durante la sesión, demostrando comprensión de la diferencia entre lo esperado y lo observado.`,
+    aplicar:    () => `Registra de forma completa lo que ocurrió, lo que no ocurrió y las dificultades presentadas, siguiendo la Opción A (guía del docente) o la Opción B (descripción libre con precisión técnica).`,
+    analizar:   () => `Registra lo ocurrido y lo no ocurrido Y analiza por qué se presentaron las dificultades observadas, relacionándolas con el procedimiento o las condiciones de la sesión.`,
+    crear:      () => `Integra el registro de lo ocurrido, lo no ocurrido y las dificultades en una narración coherente que reconstruye la lógica completa de la sesión, no hechos aislados.`,
+    evaluar:    () => `Registra lo ocurrido y las dificultades Y evalúa si las dificultades comprometieron la validez del procedimiento, proponiendo cómo se evitarían en una repetición.`,
+  };
+
+  const DESC_RESULTADOS = {
+    recordar:   (a, pr) => `Identifica y registra correctamente los datos, mediciones o evidencias de ${a || 'la práctica'}, tal como se presentaron${pr ? `, en relación con lo que la práctica buscaba lograr ("${pr}")` : ''}.`,
+    comprender: (a, pr) => `Explica con claridad qué significa cada dato o evidencia obtenida de ${a || 'la práctica'}, interpretando su sentido básico${pr ? ` respecto a "${pr}"` : ''}.`,
+    aplicar:    (a, pr) => `Presenta evidencia tangible y completa (tabla, fotos, datos) de ${a || 'la práctica'} que demuestra ejecución correcta${pr ? `, mostrando específicamente lo que el Propósito de esta práctica pedía: "${pr}"` : ''}, con descripción clara de lo obtenido.`,
+    analizar:   (a, pr) => `Presenta evidencia tangible completa de ${a || 'la práctica'} Y la analiza: compara variaciones, identifica patrones y establece relaciones entre los datos${pr ? `, verificando si lo obtenido corresponde con el Propósito declarado para esta práctica: "${pr}"` : ''}.`,
+    crear:      (a, pr) => `Integra los datos de ${a || 'la práctica'} en un esquema, modelo o estructura propia (tabla comparativa, diagrama) que organiza toda la evidencia en un conjunto coherente${pr ? `, mostrando con claridad cómo se alcanzó el Propósito: "${pr}"` : ''}.`,
+    evaluar:    (a, pr) => `Presenta evidencia tangible de ${a || 'la práctica'}, la analiza Y evalúa la validez o confiabilidad de los resultados${pr ? ` frente al Propósito declarado ("${pr}")` : ''}, señalando posibles fuentes de error.`,
+  };
+
+  const DESC_CONCLUSIONES = {
+    recordar:   (pr) => `Responde a las preguntas de conclusión establecidas por el docente (o desarrolla su conclusión de forma libre, si no se establecieron preguntas), identificando correctamente los datos básicos: objetivo, resultados obtenidos, factores observados${pr ? `, en relación con "${pr}"` : ''}.`,
+    comprender: (pr) => `Responde a las preguntas de conclusión establecidas (o de forma libre), explicando con sus propias palabras el significado de lo ocurrido${pr ? ` respecto al Propósito de esta práctica: "${pr}"` : ''}, no solo repitiendo datos.`,
+    aplicar:    (pr) => `Responde a las preguntas de conclusión establecidas (o de forma libre), con descripciones correctas y completas de lo ejecutado y lo obtenido, verificando con claridad si se cumplió${pr ? ` "${pr}"` : ' el objetivo de la práctica'}.`,
+    analizar:   (pr) => `Responde a las preguntas de conclusión establecidas por el docente (o desarrolla su conclusión de forma libre, si no se establecieron preguntas), verificando de forma puntual si se logró${pr ? ` "${pr}"` : ' el objetivo de la práctica'} — el Propósito declarado para esta práctica — con razonamiento técnico explícito.`,
+    crear:      (pr) => `Integra su conclusión en un argumento conjunto y coherente que conecta el objetivo, los resultados y los factores observados como un todo${pr ? `, mostrando cómo se alcanzó "${pr}"` : ''}.`,
+    evaluar:    (pr) => `Responde a las preguntas de conclusión establecidas (o de forma libre), con razonamiento técnico Y argumenta con criterio profesional propio, tomando postura fundamentada sobre si se cumplió${pr ? ` "${pr}"` : ' el objetivo de la práctica'}.`,
+  };
+
+  const VERBO_NIVEL = {
+    recordar:"Conocimiento", comprender:"Comprensión", aplicar:"Aplicación",
+    analizar:"Análisis", evaluar:"Evaluación", crear:"Creación"
+  };
+
+  // ─── DISTRIBUCIÓN DE PUNTOS SEGÚN NIVEL DE RIESGO ──────────────────────
+  // Fijos siempre: Justificación 1.0 + Desarrollo y Observaciones 1.0 + Bibliografía 0.5 = 2.5
+  // Variables según riesgo: EPP + Resultados + Conclusiones = 7.5
+  //   Alto:    EPP 3.0 | Resultados 2.5 | Conclusiones 2.0
+  //   Medio:   EPP 2.0 | Resultados 3.0 | Conclusiones 2.5
+  //   Mínimo:  EPP 1.0 | Resultados 3.5 | Conclusiones 3.0
+  const TABLA_RIESGO = {
+    alto:     { epp: 3.0, resultados: 2.5, conclusiones: 2.0 },
+    estandar: { epp: 2.0, resultados: 3.0, conclusiones: 2.5 },
+    minimo:   { epp: 1.0, resultados: 3.5, conclusiones: 3.0 },
+  };
+  const rg = TABLA_RIESGO[d.nivelRiesgo] || TABLA_RIESGO.minimo;
+
+  const procTxt = d.procedimiento || "el procedimiento de esta práctica";
+  const anaTxt = d.analisis || "";
+  const propTxt = d.proposito || "";
+
+  // ① Justificación — 1.0 pt fijo
+  c.push({
+    nombre: "① Justificación — Apartado 2 del Reporte",
+    pts: 1.0,
+    grupo: "reporte",
+    excelente: DESC_JUSTIFICACION[bl](d.practica || "esta práctica") + ` (Nivel Bloom: ${VERBO_NIVEL[bl]})`,
+    satisfactorio: "Desarrolla los tres elementos, pero alguno es superficial, genérico o con vinculación parcial a esta práctica específica.",
+    insuficiente: "Desarrolla solo uno o dos de los tres elementos requeridos (contextualización, problemática, valor formativo).",
+    deficiente: "No presenta justificación, o el texto es un resumen del procedimiento sin argumentación.",
+  });
+
+  // ② Desarrollo y Observaciones de la Práctica — 1.0 pt fijo
+  c.push({
+    nombre: "② Desarrollo y Observaciones de la Práctica — Apartado 3 del Reporte",
+    pts: 1.0,
+    grupo: "reporte",
+    excelente: DESC_DESARROLLO[bl]() + ` (Nivel Bloom: ${VERBO_NIVEL[bl]})`,
+    satisfactorio: "Registra lo ocurrido y lo no ocurrido, pero omite o describe vagamente las dificultades presentadas.",
+    insuficiente: "Registra de forma incompleta, sin distinguir claramente lo ocurrido de lo no ocurrido.",
+    deficiente: "No presenta registro de desarrollo y observaciones, o el apartado está vacío.",
+  });
+
+  // ③ Resultados — variable según riesgo
+  c.push({
+    nombre: "③ Resultados — Apartado 4 del Reporte",
+    pts: rg.resultados,
+    grupo: "reporte",
+    excelente: DESC_RESULTADOS[bl](anaTxt, propTxt) + ` (Nivel Bloom: ${VERBO_NIVEL[bl]})`,
+    satisfactorio: "Presenta evidencia tangible, pero incompleta o con análisis limitado de lo obtenido.",
+    insuficiente: "Es principalmente una copia o paráfrasis de las observaciones, sin análisis adicional.",
+    deficiente: "No presenta evidencia ni resultados, o el apartado está vacío.",
+  });
+
+  // ④ Conclusiones — ligadas al Propósito (sin número fijo de preguntas), variable según riesgo
+  c.push({
+    nombre: "④ Conclusiones (ligadas al Propósito) — Apartado 5 del Reporte",
+    pts: rg.conclusiones,
+    grupo: "reporte",
+    excelente: DESC_CONCLUSIONES[bl](propTxt) + ` (Nivel Bloom: ${VERBO_NIVEL[bl]})`,
+    satisfactorio: "Responde a las preguntas establecidas (o de forma libre), pero alguna respuesta es superficial o con razonamiento limitado respecto al Propósito.",
+    insuficiente: "Responde de forma incompleta o las respuestas son genéricas, sin verificar el cumplimiento del Propósito.",
+    deficiente: "No responde a las preguntas establecidas, no desarrolla conclusión alguna, o el apartado está vacío.",
+  });
+
+  // ⑤ Bibliografía — 0.5 pt fijo, sin variación por Bloom
+  c.push({
+    nombre: "⑤ Bibliografía — Apartado 6 del Reporte",
+    pts: 0.5,
+    grupo: "reporte",
+    excelente: "Presenta 2 o más fuentes académicas en formato APA 7ª edición correctamente citadas. (Criterio técnico — no varía por nivel Bloom)",
+    satisfactorio: "Presenta 2 fuentes académicas, con errores menores de formato APA.",
+    insuficiente: "Presenta solo 1 fuente académica, o sin aval académico (Wikipedia, blogs).",
+    deficiente: "No presenta bibliografía, o el apartado está vacío.",
+  });
+
+  // ⑥ EPP y seguridad — único criterio del Plan, variable según riesgo
+  const nombreEPP = d.nivelRiesgo === 'alto' ? "⑥ EPP y seguridad — Alto riesgo" : d.nivelRiesgo === 'estandar' ? "⑥ EPP y seguridad — Riesgo Medio" : "⑥ EPP y seguridad — Riesgo mínimo";
+  c.push({
+    nombre: nombreEPP + " — Plan de Práctica",
+    pts: rg.epp,
+    grupo: "plan",
+    excelente: d.nivelRiesgo === 'alto'
+      ? "Porta todo el EPP requerido desde el ingreso (bata cerrada, guantes, cubrebocas, lentes según corresponda). Manipula reactivos y material biológico con doble guante. Deposita residuos en el contenedor correcto. Estación limpia y descontaminada al finalizar. Sin incidentes de bioseguridad. (Criterio técnico/conductual — no varía por nivel Bloom)"
+      : d.nivelRiesgo === 'estandar'
+      ? "Porta todo el EPP requerido (bata cerrada, guantes, cubrebocas según corresponda). Manipula material biológico con guantes en todo momento. Estación ordenada y limpia al finalizar. (Criterio técnico/conductual — no varía por nivel Bloom)"
+      : "Porta bata cerrada, calzado cerrado y demás EPP indicado en el Anexo General durante toda la sesión, sin necesidad de recordatorio. Equipo devuelto en buen estado. Estación de trabajo limpia y ordenada. (Criterio técnico/conductual — no varía por nivel Bloom)",
+    satisfactorio: "Porta el EPP completo, pero requiere 1 recordatorio del docente sobre alguna medida de seguridad (bata, cubrebocas u otro elemento del reglamento).",
+    insuficiente: "Le falta algún elemento de EPP durante parte de la sesión, o requiere más de 1 corrección de seguridad.",
+    deficiente: "Se presenta sin el EPP obligatorio (no se le permite el acceso al laboratorio, conforme al Anexo General).",
+  });
+
+  // Los pesos son FIJOS por nivel de riesgo y siempre suman exactamente 10.0
+  // Alto: 1.0+1.0+2.5+2.0+0.5+3.0=10.0 | Medio: 1.0+1.0+3.0+2.5+0.5+2.0=10.0 | Mínimo: 1.0+1.0+3.5+3.0+0.5+1.0=10.0
+
+  return c;
+}
+
+// ─── RENDERIZAR RESULTADO ──────────────────────────────────────────────────
+function renderizarResultado() {
+  document.getElementById("rubrica-subtitulo").textContent =
+    estado.asignatura + " — Práctica No. " + estado.num + ": " + estado.practica;
+  document.getElementById("tabla-titulo").textContent =
+    "RÚBRICA DE EVALUACIÓN — " + estado.asignatura + " — Práctica No. " + estado.num;
+
+  actualizarTabla();
+  actualizarDistribucion();
+  renderizarEditor();
+  renderizarChecklist();
+}
+
+function sumaActual() {
+  return parseFloat(criteriosActuales.reduce((a, c) => a + (parseFloat(c.pts) || 0), 0).toFixed(2));
+}
+
+function actualizarTabla() {
+  const tbody = document.getElementById("tabla-body");
+  tbody.innerHTML = "";
+  criteriosActuales.forEach(c => {
+    const tr = document.createElement("tr");
+    const ptsSat = parseFloat((c.pts * 0.8).toFixed(2));
+    const ptsIns = parseFloat((c.pts * 0.4).toFixed(2));
+    tr.innerHTML = `
+      <td class="td-nombre">${c.nombre}<div class="td-pts">(${c.pts} pts)</div></td>
+      <td class="td-exc">${c.excelente}<div class="nivel-pts">${c.pts} pts</div></td>
+      <td class="td-sat">${c.satisfactorio}<div class="nivel-pts">${ptsSat} pts</div></td>
+      <td class="td-ins">${c.insuficiente}<div class="nivel-pts">${ptsIns} pts</div></td>
+      <td class="td-def">${c.deficiente}<div class="nivel-pts">0 pts</div></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  const suma = sumaActual();
+  const ok = Math.abs(suma - 10) < 0.05;
+  document.getElementById("total-display").textContent = "Total: " + suma + " / 10 pts";
+  document.getElementById("badge-total").textContent = ok ? "✓ Total: " + suma + " pts" : "⚠ Total: " + suma + " pts";
+  document.getElementById("badge-total").style.background = ok ? "var(--verde)" : "var(--rojo)";
+  document.getElementById("badge-criterios").textContent = criteriosActuales.length + " criterios";
+  actualizarDistribucion();
+  renderizarChecklist();
+}
+
+function actualizarDistribucion() {
+  const cont = document.getElementById("barras-distribucion");
+  const formula = document.getElementById("formula-display");
+  if (!cont || !formula) return;
+
+  const suma = sumaActual();
+  const ok = Math.abs(suma - 10) < 0.05;
+
+  // Fórmula
+  formula.textContent = "Pt = " + criteriosActuales.map((c,i) => "C"+(i+1)).join(" + ") + " = " + suma + " / 10 pts";
+  formula.style.background = ok ? "var(--verde-f)" : "var(--rojo-f)";
+  formula.style.color = ok ? "var(--verde)" : "var(--rojo)";
+  formula.style.borderColor = ok ? "var(--verde)" : "var(--rojo)";
+
+  // Colores por tipo de criterio
+  const getCriterioColor = (nombre) => {
+    const n = nombre.toLowerCase();
+    if (n.includes("justificaci")) return {bg:"var(--azul-m)", label:"Justificación"};
+    if (n.includes("desarrollo") || n.includes("observaciones")) return {bg:"#5B7FA6", label:"Desarrollo"};
+    if (n.includes("resultados")) return {bg:"#8B6914", label:"Resultados"};
+    if (n.includes("conclusi")) return {bg:"var(--verde)", label:"Conclusión"};
+    if (n.includes("bibliograf")) return {bg:"var(--morado)", label:"Bibliografía"};
+    if (n.includes("epp") || n.includes("seguridad")) return {bg:"var(--rojo)", label:"Seguridad"};
+    return {bg:"var(--gris-o)", label:"Criterio"};
+  };
+
+  cont.innerHTML = "";
+  criteriosActuales.forEach((c, i) => {
+    const pct = suma > 0 ? ((parseFloat(c.pts) / 10) * 100).toFixed(1) : 0;
+    const col = getCriterioColor(c.nombre);
+    const esCritico = parseFloat(c.pts) >= 2.5;
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex;align-items:center;gap:10px";
+    row.innerHTML = `
+      <div style="width:24px;height:24px;border-radius:12px;background:${col.bg};color:white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">C${i+1}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+          <span style="font-size:12px;color:var(--texto);font-weight:${esCritico ? '700' : '400'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%">${c.nombre.length > 55 ? c.nombre.slice(0,55)+'...' : c.nombre}</span>
+          <span style="font-size:12px;font-weight:700;color:${col.bg};flex-shrink:0;margin-left:8px">${parseFloat(c.pts).toFixed(1)} pts (${pct}%)</span>
+        </div>
+        <div style="height:10px;background:#E2E8F0;border-radius:5px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${col.bg};border-radius:5px;transition:width 0.4s ease;min-width:${pct > 0 ? 4 : 0}px"></div>
+        </div>
+      </div>
+      ${esCritico ? '<span style="font-size:10px;background:'+col.bg+';color:white;padding:2px 6px;border-radius:4px;flex-shrink:0;font-weight:700">NÚCLEO</span>' : ''}
+    `;
+    cont.appendChild(row);
+  });
+
+  // Verificación de la distribución
+  const maxPts = Math.max(...criteriosActuales.map(c => parseFloat(c.pts)||0));
+  const minPts = Math.min(...criteriosActuales.map(c => parseFloat(c.pts)||0));
+  const distribucionEquitativa = (maxPts - minPts) < 0.5;
+
+  if (distribucionEquitativa && criteriosActuales.length > 3) {
+    const aviso = document.createElement("div");
+    aviso.style.cssText = "margin-top:10px;padding:8px 12px;background:var(--ambar-f);border-radius:6px;border-left:3px solid var(--ambar);font-size:12px;color:var(--ambar)";
+    aviso.innerHTML = "<strong>⚠ Aviso:</strong> Todos los criterios tienen el mismo peso. Considere si esto refleja la importancia técnica real de cada uno en su práctica.";
+    cont.appendChild(aviso);
+  }
+}
+
+// ─── EDITOR ───────────────────────────────────────────────────────────────
+function renderizarEditor() {
+  const cont = document.getElementById("editor-criterios");
+  cont.innerHTML = "";
+  criteriosActuales.forEach((c, i) => {
+    const div = document.createElement("div");
+    div.className = "editor-crit";
+    div.innerHTML = `
+      <div class="editor-top">
+        <div class="editor-nombre">
+          <label style="font-size:12px;font-weight:700;color:var(--azul-o)">Nombre del criterio</label>
+          <input value="${esc(c.nombre)}" onchange="editarCampo(${i},'nombre',this.value)" style="margin-top:3px">
+        </div>
+        <div class="editor-pts">
+          <label style="font-size:12px;font-weight:700;color:var(--azul-o)">Puntos</label>
+          <input type="number" step="0.1" min="0" max="10" value="${c.pts}" onchange="editarPts(${i},this.value)" style="margin-top:3px;font-weight:700;color:var(--azul-o)">
+          <div style="font-size:10px;color:var(--gris-o);margin-top:3px;font-style:italic" id="rango-hint-${i}">${getRangoHint(c.nombre)}</div>
+        </div>
+      </div>
+      <div class="nivel-editor">
+        <label style="color:var(--verde)">Excelente</label>
+        <textarea rows="2" style="border-color:var(--verde-f);background:var(--verde-f);color:var(--verde)" onchange="editarCampo(${i},'excelente',this.value)">${esc(c.excelente)}</textarea>
+        <label style="color:var(--ambar)">Satisfactorio</label>
+        <textarea rows="2" style="border-color:var(--ambar-f);background:var(--ambar-f);color:var(--ambar)" onchange="editarCampo(${i},'satisfactorio',this.value)">${esc(c.satisfactorio)}</textarea>
+        <label style="color:var(--naran)">Insuficiente</label>
+        <textarea rows="2" style="border-color:var(--naran-f);background:var(--naran-f);color:var(--naran)" onchange="editarCampo(${i},'insuficiente',this.value)">${esc(c.insuficiente)}</textarea>
+        <label style="color:var(--rojo)">Deficiente / No presentado</label>
+        <textarea rows="2" style="border-color:var(--rojo-f);background:var(--rojo-f);color:var(--rojo)" onchange="editarCampo(${i},'deficiente',this.value)">${esc(c.deficiente)}</textarea>
+      </div>
+    `;
+    cont.appendChild(div);
+  });
+  actualizarSumaEditor();
+}
+
+function actualizarSumaEditor() {
+  const suma = sumaActual();
+  const ok = Math.abs(suma - 10) < 0.05;
+  const el = document.getElementById("suma-display");
+  if (el) el.innerHTML = `<span class="suma-aviso ${ok ? 'suma-ok' : 'suma-mal'}">${ok ? '✓' : '⚠'} ${suma} / 10 pts${ok ? '' : ' — ajuste los puntos para que sumen 10'}</span>`;
+}
+
+function editarCampo(i, campo, valor) {
+  criteriosActuales[i][campo] = valor;
+  actualizarTabla();
+}
+
+function editarPts(i, valor) {
+  const pts = parseFloat(valor) || 0;
+  criteriosActuales[i].pts = pts;
+  // Advertencia visual si está fuera de rango
+  const hint = getRangoHint(criteriosActuales[i].nombre);
+  const hintEl = document.getElementById('rango-hint-' + i);
+  if (hintEl && hint) {
+    const match = hint.match(/([\d.]+) — ([\d.]+)/);
+    if (match) {
+      const [min, max] = [parseFloat(match[1]), parseFloat(match[2])];
+      if (pts < min || pts > max) {
+        hintEl.style.color = 'var(--rojo)';
+        hintEl.style.fontWeight = '700';
+        hintEl.textContent = hint + '  ⚠ Fuera del rango CLEU';
+      } else {
+        hintEl.style.color = 'var(--gris-o)';
+        hintEl.style.fontWeight = 'normal';
+        hintEl.textContent = hint;
+      }
+    }
+  }
+  actualizarTabla();
+  actualizarSumaEditor();
+}
+
+function toggleEdicion() {
+  const editor = document.getElementById("div-editor");
+  const tabla = document.getElementById("div-tabla");
+  const btn = document.getElementById("btn-editar");
+  const mostrando = editor.style.display !== "none";
+  editor.style.display = mostrando ? "none" : "block";
+  tabla.style.display = mostrando ? "block" : "none";
+  btn.textContent = mostrando ? "✏️ Editar criterios" : "👁 Ver rúbrica";
+  if (!mostrando) renderizarEditor();
+}
+
+// ─── CHECKLIST ────────────────────────────────────────────────────────────
+function renderizarChecklist() {
+  const suma = sumaActual();
+  const ok = Math.abs(suma - 10) < 0.05;
+  const items = [
+    { ok, txt: `La suma de puntos es exactamente 10 pts (actual: ${suma})` },
+    { ok: !!estado.practica, txt: "La Justificación y el Desarrollo y Observaciones se refieren a esta práctica específica, no a una genérica" },
+    { ok: true, txt: "Los descriptores de 'Excelente' son verificables (se puede comprobar si el estudiante lo cumplió)" },
+    { ok: true, txt: "La diferencia entre Excelente y Satisfactorio es de cantidad o calidad concreta, no solo de adjetivos" },
+    { ok: true, txt: "Los criterios se refieren a esta práctica específica, no podrían servir para cualquier otra" },
+  ];
+  document.getElementById("checklist").innerHTML = items.map(item => `
+    <div class="check-item">
+      <span class="check-icon" style="color:${item.ok ? 'var(--verde)' : 'var(--rojo)'}">${item.ok ? "✓" : "✗"}</span>
+      <span class="check-txt" style="color:${item.ok ? 'var(--texto)' : 'var(--rojo)'}">${item.txt}</span>
+    </div>
+  `).join("");
+}
+
+// ─── REINICIAR ────────────────────────────────────────────────────────────
+function reiniciar() {
+  ["f-asignatura","f-practica","f-num","f-procedimiento","f-analisis","f-proposito"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = id === "f-num" ? "1" : "";
+  });
+  estado.asignatura = estado.practica = estado.procedimiento = estado.analisis = "";
+  estado.num = "1"; estado.bloom = "aplicar"; estado.nivelRiesgo = "minimo";
+  document.querySelectorAll(".bloom-item").forEach(el => el.classList.remove("sel"));
+  document.getElementById("bloom-aplicar").classList.add("sel");
+  criteriosActuales = [];
+  irA(1);
+  validarPasos();
+}
+
+// ─── UTIL ─────────────────────────────────────────────────────────────────
+function getRangoHint(nombre) {
+  const n = (nombre || '').toLowerCase();
+  if (n.includes('justificaci')) return 'Peso fijo CLEU: 1.0 pt (Reporte)';
+  if (n.includes('desarrollo') || n.includes('observaciones')) return 'Peso fijo CLEU: 1.0 pt (Reporte)';
+  if (n.includes('resultados')) return 'Peso CLEU según riesgo: 2.5 / 3.0 / 3.5 pts (Reporte)';
+  if (n.includes('conclusi')) return 'Peso CLEU según riesgo: 2.0 / 2.5 / 3.0 pts (Reporte)';
+  if (n.includes('bibliograf')) return 'Peso fijo CLEU: 0.5 pt (Reporte)';
+  if (n.includes('epp') || n.includes('seguridad')) return 'Peso CLEU según riesgo: 3.0 / 2.0 / 1.0 pts (Plan)';
+  return '';
+}
+
+function esc(str) {
+  return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+</script>
+
+<!-- PRINT STYLES -->
+<style>
+@media print {
+  .header, .sidebar, .result-actions, .alerta-azul, .panel:not(:last-child) { display: none !important; }
+  .layout { padding: 0; }
+  .main { width: 100%; }
+  .rubrica-table { font-size: 10px; }
+  .rubrica-table td { padding: 6px 8px; }
+}
+</style>
+
+</body>
+</html>

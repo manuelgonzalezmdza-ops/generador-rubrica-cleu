@@ -437,7 +437,7 @@
         <div class="result-actions">
           <button class="btn btn-ambar" id="btn-editar" onclick="toggleEdicion()">✏️ Editar criterios</button>
           <button class="btn btn-ghost" onclick="reiniciar()">↺ Nueva rúbrica</button>
-          <button class="btn btn-primary" onclick="window.print()">🖨 Imprimir / Guardar PDF</button>
+          <button class="btn btn-primary" onclick="imprimirRubrica()">🖨 Imprimir / Guardar PDF</button>
         </div>
       </div>
 
@@ -466,6 +466,25 @@
       <!-- TABLA RÚBRICA -->
       <div id="div-tabla" class="panel" style="margin-bottom:16px">
         <div style="font-weight:700;color:var(--azul-o);font-size:15px;margin-bottom:14px" id="tabla-titulo"></div>
+
+        <!-- Encabezado visible solo en impresión PDF -->
+        <div class="rubrica-header-print" style="display:none">
+          <table style="width:100%;border-collapse:collapse;margin-bottom:8px;font-family:Arial,sans-serif">
+            <tr>
+              <td style="background:#1B3A6B;color:#fff;padding:8px 12px;font-size:11pt;font-weight:700;width:60%">
+                RÚBRICA DE EVALUACIÓN DEL REPORTE DE PRÁCTICA — HCLA 50.05
+              </td>
+              <td style="background:#1B3A6B;color:#D9E4F5;padding:8px 12px;font-size:8pt;text-align:right;width:40%">
+                Colegio Libre de Estudios Universitarios — CLEU
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" style="background:#EEF4FB;padding:6px 12px;font-size:8.5pt;color:#1B3A6B" id="print-header-datos">
+              </td>
+            </tr>
+          </table>
+        </div>
+
         <div class="rubrica-wrapper">
           <table class="rubrica-table" id="tabla-rubrica">
             <thead>
@@ -486,10 +505,27 @@
             </tfoot>
           </table>
         </div>
+
+        <!-- Pie de página visible solo en impresión -->
+        <div class="print-footer" style="display:none">
+          Sistema HCLA 50.05 &nbsp;|&nbsp; Generador de Rúbricas — Dirección Académica Corporativa CLEU &nbsp;|&nbsp;
+          Nivel de riesgo: <span id="print-riesgo"></span> &nbsp;|&nbsp; Nivel Bloom: <span id="print-bloom"></span>
+        </div>
+
         <div class="alerta alerta-azul" style="margin-top:16px;font-size:12px">
-          <strong>Instrucción de uso:</strong> Copie esta rúbrica y péguela en la Sección IX del formato HCLA 50.05.
-          Para copiar: seleccione toda la tabla con el ratón, Ctrl+C, y luego Ctrl+V en Word.
-          También puede imprimir esta página con el botón <strong>🖨 Imprimir / Guardar PDF</strong>.
+          <strong>¿Cómo guardar la rúbrica?</strong><br>
+          <strong>Opción A — PDF completo:</strong> Haga clic en el botón <strong>🖨 Imprimir / Guardar PDF</strong>.
+          Se abrirá la ventana de impresión de su navegador (esto es normal, así funciona).
+          En esa ventana, donde dice <strong>"Destino"</strong> o <strong>"Impresora"</strong>, seleccione la opción
+          <strong>"Guardar como PDF"</strong> (en computadora) o <strong>"Guardar en archivos / Exportar como PDF"</strong>
+          (en celular o tablet). Después presione el botón <strong>"Guardar"</strong> de esa misma ventana —
+          NO el botón "Cancelar". La rúbrica se descargará completa en una sola hoja horizontal (paisaje),
+          sin partirse entre páginas.<br><br>
+          <strong>Opción B — Copiar y pegar en Word:</strong> Si su navegador no muestra la opción "Guardar como PDF",
+          puede copiar la tabla directamente. Haga clic dentro de la primera celda de la rúbrica, mantenga
+          presionada la tecla <strong>Shift</strong> y haga clic en la última celda (abajo a la derecha) para
+          seleccionar toda la tabla. Presione <strong>Ctrl+C</strong> (o mantenga presionado y elija "Copiar" en
+          celular), abra su documento de Word y presione <strong>Ctrl+V</strong> (o "Pegar") para insertarla ahí.
         </div>
       </div>
 
@@ -778,12 +814,47 @@ function construirCriterios() {
   return c;
 }
 
-// ─── RENDERIZAR RESULTADO ──────────────────────────────────────────────────
+
+// ─── IMPRIMIR / PDF ────────────────────────────────────────────────────────
+function imprimirRubrica() {
+  // Mostrar elementos solo visibles en impresión
+  const hdr = document.querySelector('.rubrica-header-print');
+  const ftr = document.querySelector('.print-footer');
+  if (hdr) hdr.style.display = 'block';
+  if (ftr) ftr.style.display = 'block';
+  // Imprimir
+  window.print();
+  // Restaurar después de imprimir
+  setTimeout(() => {
+    if (hdr) hdr.style.display = 'none';
+    if (ftr) ftr.style.display = 'none';
+  }, 1000);
+}
+
+
 function renderizarResultado() {
   document.getElementById("rubrica-subtitulo").textContent =
     estado.asignatura + " — Práctica No. " + estado.num + ": " + estado.practica;
   document.getElementById("tabla-titulo").textContent =
     "RÚBRICA DE EVALUACIÓN — " + estado.asignatura + " — Práctica No. " + estado.num;
+
+  // Llenar encabezado de impresión PDF
+  const nivelRiesgoLabel = estado.nivelRiesgo === 'alto' ? 'Alto' : estado.nivelRiesgo === 'estandar' ? 'Medio' : 'Mínimo';
+  const bloomLabel = estado.bloom.charAt(0).toUpperCase() + estado.bloom.slice(1);
+  const headerEl = document.getElementById("print-header-datos");
+  if (headerEl) {
+    headerEl.innerHTML =
+      "<strong>Asignatura:</strong> " + (estado.asignatura || "—") +
+      " &nbsp;|&nbsp; <strong>Práctica No.:</strong> " + (estado.num || "—") +
+      " &nbsp;|&nbsp; <strong>Nombre:</strong> " + (estado.practica || "—") +
+      " &nbsp;|&nbsp; <strong>Nivel Bloom:</strong> " + bloomLabel +
+      " &nbsp;|&nbsp; <strong>Nivel de riesgo:</strong> " + nivelRiesgoLabel;
+  }
+  // Actualizar spans del pie de impresión
+  const pr = document.getElementById("print-riesgo");
+  const pb = document.getElementById("print-bloom");
+  if (pr) pr.textContent = nivelRiesgoLabel;
+  if (pb) pb.textContent = bloomLabel;
 
   actualizarTabla();
   actualizarDistribucion();
@@ -1020,11 +1091,124 @@ function esc(str) {
 <!-- PRINT STYLES -->
 <style>
 @media print {
-  .header, .sidebar, .result-actions, .alerta-azul, .panel:not(:last-child) { display: none !important; }
-  .layout { padding: 0; }
-  .main { width: 100%; }
-  .rubrica-table { font-size: 10px; }
-  .rubrica-table td { padding: 6px 8px; }
+  /* ── Ocultar todo excepto la rúbrica ── */
+  .header, .sidebar, .result-actions, .alerta-azul,
+  .panel:not(:last-child), .paso-nav, .btn, button,
+  .checklist-pre, h2.panel-titulo:not(.print-visible),
+  .panel-sub, .hint, #paso4 > *:not(.rubrica-wrapper):not(.rubrica-header-print):not(.print-footer) {
+    display: none !important;
+  }
+
+  /* ── Página horizontal A4 con márgenes ajustados ── */
+  @page {
+    size: A4 landscape;
+    margin: 10mm 8mm 10mm 8mm;
+  }
+
+  html, body {
+    width: 100%;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    background: #fff !important;
+  }
+
+  .layout { display: block !important; padding: 0 !important; }
+  .main   { width: 100% !important; padding: 0 !important; }
+
+  /* ── Encabezado de la rúbrica en impresión ── */
+  .rubrica-header-print {
+    display: block !important;
+    margin-bottom: 6px;
+  }
+
+  /* ── Wrapper: quitar overflow para que la tabla se expanda ── */
+  .rubrica-wrapper {
+    overflow: visible !important;
+    border: none !important;
+    border-radius: 0 !important;
+    width: 100% !important;
+  }
+
+  /* ── Tabla principal ── */
+  .rubrica-table {
+    width: 100% !important;
+    min-width: unset !important;
+    font-size: 8.5pt !important;
+    border-collapse: collapse !important;
+    table-layout: fixed !important;
+    /* CLAVE: no partir la tabla entre páginas */
+    break-inside: avoid-page !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Anchos de columna fijos para landscape A4 */
+  .rubrica-table colgroup,
+  .rubrica-table col { display: table-column; }
+  .rubrica-table th:nth-child(1),
+  .rubrica-table td:nth-child(1) { width: 22% !important; }
+  .rubrica-table th:nth-child(2),
+  .rubrica-table td:nth-child(2) { width: 20% !important; }
+  .rubrica-table th:nth-child(3),
+  .rubrica-table td:nth-child(3) { width: 20% !important; }
+  .rubrica-table th:nth-child(4),
+  .rubrica-table td:nth-child(4) { width: 20% !important; }
+  .rubrica-table th:nth-child(5),
+  .rubrica-table td:nth-child(5) { width: 18% !important; }
+
+  /* Celdas: no partir filas individualmente */
+  .rubrica-table tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .rubrica-table th {
+    background: #1B3A6B !important;
+    color: #fff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    padding: 6pt 5pt !important;
+    font-size: 8pt !important;
+    text-align: center !important;
+    border: 1px solid #1B3A6B !important;
+  }
+
+  .rubrica-table td {
+    padding: 5pt 5pt !important;
+    font-size: 7.5pt !important;
+    line-height: 1.35 !important;
+    vertical-align: top !important;
+    border: 1px solid #CCCCDD !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  /* Mantener colores de fondo en impresión */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Fila de totales al fondo */
+  .rubrica-table tfoot td {
+    background: #D9E4F5 !important;
+    font-weight: 700 !important;
+    color: #1B3A6B !important;
+    font-size: 8pt !important;
+    padding: 5pt !important;
+    border: 1px solid #1B3A6B !important;
+  }
+
+  /* Pie de página de impresión */
+  .print-footer {
+    display: block !important;
+    margin-top: 8px;
+    font-size: 7pt;
+    color: #555566;
+    text-align: center;
+    border-top: 1px solid #CCCCDD;
+    padding-top: 4px;
+  }
 }
 </style>
 
